@@ -1,0 +1,9 @@
+date,league,home,away,market,selection,p_model,model_tag
+2024-04-01,NBA,台北戰神,高雄火焰,ML,HOME,0.66,baseline_v1
+2024-04-01,NBA,台北戰神,高雄火焰,ML,AWAY,0.32,baseline_v1
+2024-04-01,NBA,台北戰神,高雄火焰,TOTAL,OVER,0.64,baseline_v1
+2024-04-01,NBA,台北戰神,高雄火焰,TOTAL,UNDER,0.31,baseline_v1
+2024-04-01,MLB,台北猛虎,台中飛魚,ML,HOME,0.59,baseline_v1
+2024-04-01,MLB,台北猛虎,台中飛魚,ML,AWAY,0.38,baseline_v1
+2024-04-02,NBA,新竹巨浪,台中雷霆,ML,HOME,0.62,baseline_v1
+2024-04-02,NBA,新竹巨浪,台中雷霆,ML,AWAY,0.35,baseline_v1

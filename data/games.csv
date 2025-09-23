@@ -1,0 +1,5 @@
+date,league,home,away,finalized,result_side,closing_total
+2024-04-01,NBA,台北戰神,高雄火焰,true,HOME:W;AWAY:L;OVER:W;UNDER:L,220.5
+2024-04-01,MLB,台北猛虎,台中飛魚,true,HOME:L;AWAY:W;OVER:L;UNDER:W,8.5
+2024-04-02,NBA,新竹巨浪,台中雷霆,true,HOME:L;AWAY:W;OVER:L;UNDER:W,218.0
+2024-04-02,MLB,高雄犀牛,花蓮鯨,true,HOME:W;AWAY:L;OVER:W;UNDER:L,9.0

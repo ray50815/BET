@@ -131,6 +131,7 @@ export async function getReportData(
     }
   });
 
+  // 聚合同一場、同一盤口的多個 market 以估算無抽水隱含機率
   const groupedOdds = new Map<string, number[]>();
   const groupedIds: Record<string, number[]> = {};
 
@@ -145,7 +146,7 @@ export async function getReportData(
       groupedOdds.set(key, []);
     }
     if (oddsValue) {
-      groupedOdds.get(key)!.push(oddsValue);
+      groupedOdds.get(key)!.push(Number(oddsValue));
     }
   }
 
@@ -168,7 +169,7 @@ export async function getReportData(
     if (!latestOdds || !latestModel) continue;
 
     const pModel = latestModel.pModel;
-    const ev = calculateEv(pModel, latestOdds.oddsDecimal);
+    const ev = calculateEv(pModel, Number(latestOdds.oddsDecimal));
     const passesRule =
       mode === 'highWin'
         ? pModel >= (filters.minProbability ?? 0.6)
@@ -176,14 +177,15 @@ export async function getReportData(
     if (!passesRule) continue;
 
     const dateKey = toDateKey(market.game.date);
-    const implied = impliedMap.get(market.id) ?? calculateImpliedProbability(latestOdds.oddsDecimal);
-    const kellyFraction = calculateKellyFraction(pModel, latestOdds.oddsDecimal);
+    const implied =
+      impliedMap.get(market.id) ?? calculateImpliedProbability(Number(latestOdds.oddsDecimal));
+    const kellyFraction = calculateKellyFraction(pModel, Number(latestOdds.oddsDecimal));
     const kellyTiers = getKellyStakeTiers(BANKROLL_UNITS, kellyFraction);
 
     const outcome = market.result?.outcome ?? null;
     const result: ReportRow['result'] = outcome ? outcome : 'PENDING';
     const unitsDelta = outcome
-      ? calculateProfit(outcome, latestOdds.oddsDecimal, BANKROLL_UNITS)
+      ? calculateProfit(outcome, Number(latestOdds.oddsDecimal), BANKROLL_UNITS)
       : 0;
 
     rows.push({
@@ -193,7 +195,7 @@ export async function getReportData(
       matchup: formatMatchup(market.game.homeTeam.name, market.game.awayTeam.name),
       marketType: market.type,
       selection: market.selection,
-      oddsDecimal: Number(latestOdds.oddsDecimal.toFixed(2)),
+      oddsDecimal: Number(Number(latestOdds.oddsDecimal).toFixed(2)),
       bookmaker: latestOdds.bookmaker,
       pModel: Number(pModel.toFixed(3)),
       modelTag: latestModel.modelTag,
@@ -241,7 +243,7 @@ export async function getDashboardOverview() {
   const start60 = subDays(now, 60);
 
   const picks = report.rows.map((row) => ({
-    stakeUnits: BANKROLL_UNITS,
+    stakeUnits: 1,
     oddsDecimal: row.oddsDecimal,
     outcome: row.result as 'WIN' | 'LOSE' | 'PUSH',
     date: new Date(`${row.date}T12:00:00+08:00`)

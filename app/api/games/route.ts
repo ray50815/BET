@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { toDateKey } from '@/lib/analytics';
+import { parseMarketTypeInput } from '@/lib/enums';
 
 const querySchema = z.object({
   league: z.string().optional(),
@@ -21,8 +22,14 @@ export async function GET(request: NextRequest) {
     const query = Object.fromEntries(request.nextUrl.searchParams.entries());
     const parsed = querySchema.parse(query);
     const end = parseDate(parsed.endDate, 23) ?? new Date();
-    const start = parseDate(parsed.startDate, 0) ?? new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const marketFilter = parsed.marketType ? MarketType[parsed.marketType] : undefined;
+    const start =
+      parseDate(parsed.startDate, 0) ??
+      new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // 利用 parseMarketTypeInput 將字串轉換成 Prisma 的 enum
+    const marketFilter = parsed.marketType
+      ? parseMarketTypeInput(parsed.marketType) as MarketType
+      : undefined;
 
     const games = await prisma.game.findMany({
       where: {

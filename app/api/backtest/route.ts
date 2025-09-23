@@ -31,7 +31,10 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const body = bodySchema.parse(json);
     const end = parseDateInput(body.endDate, 23) ?? new Date();
-    const start = parseDateInput(body.startDate, 0) ?? new Date(end.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const start =
+      parseDateInput(body.startDate, 0) ??
+      new Date(end.getTime() - 60 * 24 * 60 * 60 * 1000);
+
     const marketTypes = body.marketTypes?.length
       ? body.marketTypes
       : [MarketType.ML, MarketType.SPREAD, MarketType.TOTAL];
@@ -106,13 +109,20 @@ export async function POST(request: NextRequest) {
             model
           };
         })
-        .filter((item): item is { market: (typeof markets)[number]; ev: number; odds: any; model: any } => !!item)
+        .filter(
+          (item): item is { market: (typeof markets)[number]; ev: number; odds: any; model: any } =>
+            !!item
+        )
         .sort((a, b) => b.ev - a.ev)
         .slice(0, body.maxConcurrent);
 
       for (const pick of eligible) {
         const result = pick.market.result?.outcome ?? 'PUSH';
-        const profit = calculateProfit(result, pick.odds.oddsDecimal, body.stakeUnits);
+        const profit = calculateProfit(
+          result,
+          pick.odds.oddsDecimal,
+          body.stakeUnits
+        );
         selectedPicks.push({
           id: pick.market.id,
           date: dateKey,

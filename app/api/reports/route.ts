@@ -20,10 +20,13 @@ function parseMarketTypes(value?: string) {
     .split(',')
     .map((item) => item.trim().toUpperCase())
     .filter(Boolean);
+
   const types: MarketType[] = [];
   for (const item of normalized) {
     if (item in MarketType) {
       types.push(MarketType[item as keyof typeof MarketType]);
+    } else {
+      console.warn('忽略未知盤口類型', item);
     }
   }
   return types.length ? types : undefined;
@@ -33,6 +36,7 @@ export async function GET(request: NextRequest) {
   try {
     const query = Object.fromEntries(request.nextUrl.searchParams.entries());
     const parsed = querySchema.parse(query);
+
     const leagues = parsed.leagues
       ? parsed.leagues.split(',').map((item) => item.trim()).filter(Boolean)
       : undefined;

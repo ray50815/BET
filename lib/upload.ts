@@ -210,7 +210,8 @@ export async function importDataset({
     const resultInfo = parseResultSide(row.result_side);
     for (const [selection, outcome] of Object.entries(resultInfo)) {
       const marketType =
-        selection === MarketSelection.OVER || selection === MarketSelection.UNDER
+        (selection as MarketSelection) === MarketSelection.OVER ||
+        (selection as MarketSelection) === MarketSelection.UNDER
           ? MarketType.TOTAL
           : MarketType.ML;
       const marketId = await ensureMarket(

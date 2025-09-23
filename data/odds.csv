@@ -1,0 +1,9 @@
+date,league,home,away,market,selection,odds_decimal,bookmaker
+2024-04-01,NBA,台北戰神,高雄火焰,ML,HOME,1.72,DemoBook
+2024-04-01,NBA,台北戰神,高雄火焰,ML,AWAY,2.15,DemoBook
+2024-04-01,NBA,台北戰神,高雄火焰,TOTAL,OVER,1.91,DemoBook
+2024-04-01,NBA,台北戰神,高雄火焰,TOTAL,UNDER,1.95,DemoBook
+2024-04-01,MLB,台北猛虎,台中飛魚,ML,HOME,1.68,DemoBook
+2024-04-01,MLB,台北猛虎,台中飛魚,ML,AWAY,2.25,DemoBook
+2024-04-02,NBA,新竹巨浪,台中雷霆,ML,HOME,1.82,DemoBook
+2024-04-02,NBA,新竹巨浪,台中雷霆,ML,AWAY,2.05,DemoBook

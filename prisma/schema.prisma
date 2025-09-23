@@ -1,0 +1,116 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum MarketType {
+  ML
+  SPREAD
+  TOTAL
+}
+
+enum MarketSelection {
+  HOME
+  AWAY
+  OVER
+  UNDER
+}
+
+enum PickSelection {
+  HOME
+  AWAY
+  OVER
+  UNDER
+}
+
+enum ResultOutcome {
+  WIN
+  LOSE
+  PUSH
+}
+
+model Team {
+  id        Int     @id @default(autoincrement())
+  name      String
+  league    String
+  homeGames Game[]  @relation("HomeTeam")
+  awayGames Game[]  @relation("AwayTeam")
+}
+
+model Game {
+  id           Int      @id @default(autoincrement())
+  league       String
+  date         DateTime
+  finalized    Boolean  @default(false)
+  homeTeamId   Int
+  awayTeamId   Int
+  homeTeam     Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam     Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  markets      Market[]
+}
+
+model Market {
+  id          Int              @id @default(autoincrement())
+  gameId      Int
+  type        MarketType
+  selection   MarketSelection
+  line        Float?
+  game        Game             @relation(fields: [gameId], references: [id])
+  odds        Odds[]
+  modelProbs  ModelProb[]
+  picks       Pick[]
+  result      Result?
+}
+
+model Odds {
+  id          Int      @id @default(autoincrement())
+  marketId    Int
+  bookmaker   String
+  oddsDecimal Float
+  createdAt   DateTime @default(now())
+  market      Market   @relation(fields: [marketId], references: [id])
+}
+
+model ModelProb {
+  id        Int      @id @default(autoincrement())
+  marketId  Int
+  pModel    Float
+  modelTag  String
+  createdAt DateTime @default(now())
+  market    Market   @relation(fields: [marketId], references: [id])
+}
+
+model Pick {
+  id          Int           @id @default(autoincrement())
+  marketId    Int
+  selection   PickSelection
+  stakeUnits  Float
+  kellyFactor Float
+  createdAt   DateTime @default(now())
+  market      Market        @relation(fields: [marketId], references: [id])
+}
+
+model Result {
+  id        Int            @id @default(autoincrement())
+  marketId  Int            @unique
+  outcome   ResultOutcome
+  settledAt DateTime @default(now())
+  market    Market         @relation(fields: [marketId], references: [id])
+}
+
+model MetricDaily {
+  id   Int    @id @default(autoincrement())
+  date DateTime @unique
+  kpi  Json
+}
+
+model UploadLog {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  createdAt DateTime @default(now())
+  meta      Json
+}

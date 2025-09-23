@@ -116,7 +116,6 @@ npm run build
 npm run start
 ```
 
-> 注意：`npm run build` 會先執行 `prisma generate` 以產生 Prisma Client。若部署至 Render、Railway 等 Node.js 平台，請將 build command 設為 `npm run build`（或 `yarn build`）並在啟動前執行 `npx prisma migrate deploy` / `prisma db push` 以套用資料表結構。
 
 ## 法規與免責聲明
 

@@ -1,3 +1,4 @@
+import { MarketType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
@@ -8,13 +9,12 @@ import {
   fillMissingDates,
   toDateKey
 } from '@/lib/analytics';
-import { MARKET_TYPE_VALUES, MarketType } from '@/lib/enums';
 
 const bodySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   leagues: z.array(z.string()).optional(),
-  marketTypes: z.array(z.enum(MARKET_TYPE_VALUES)).optional(),
+  marketTypes: z.array(z.nativeEnum(MarketType)).optional(),
   minProbability: z.number().optional().default(0.55),
   minEv: z.number().optional().default(0),
   stakeUnits: z.number().positive().optional().default(1),
@@ -31,10 +31,13 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const body = bodySchema.parse(json);
     const end = parseDateInput(body.endDate, 23) ?? new Date();
-    const start = parseDateInput(body.startDate, 0) ?? new Date(end.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const start =
+      parseDateInput(body.startDate, 0) ??
+      new Date(end.getTime() - 60 * 24 * 60 * 60 * 1000);
+
     const marketTypes = body.marketTypes?.length
       ? body.marketTypes
-      : [...MARKET_TYPE_VALUES];
+      : [MarketType.ML, MarketType.SPREAD, MarketType.TOTAL];
 
     const markets = await prisma.market.findMany({
       where: {
@@ -106,13 +109,20 @@ export async function POST(request: NextRequest) {
             model
           };
         })
-        .filter((item): item is { market: (typeof markets)[number]; ev: number; odds: any; model: any } => !!item)
+        .filter(
+          (item): item is { market: (typeof markets)[number]; ev: number; odds: any; model: any } =>
+            !!item
+        )
         .sort((a, b) => b.ev - a.ev)
         .slice(0, body.maxConcurrent);
 
       for (const pick of eligible) {
         const result = pick.market.result?.outcome ?? 'PUSH';
-        const profit = calculateProfit(result, pick.odds.oddsDecimal, body.stakeUnits);
+        const profit = calculateProfit(
+          result,
+          pick.odds.oddsDecimal,
+          body.stakeUnits
+        );
         selectedPicks.push({
           id: pick.market.id,
           date: dateKey,

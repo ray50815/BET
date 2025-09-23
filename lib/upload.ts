@@ -1,13 +1,4 @@
-import {
-  MARKET_SELECTION,
-  MARKET_TYPE,
-  MarketSelection,
-  MarketType,
-  ResultOutcome,
-  parseMarketSelectionInput,
-  parseMarketTypeInput,
-  parseResultOutcomeInput
-} from './enums';
+import { MarketSelection, MarketType, ResultOutcome } from '@prisma/client';
 import { prisma } from './prisma';
 
 export interface GameRow {
@@ -46,6 +37,42 @@ function parseDate(value: string) {
   return new Date(`${value}T12:00:00+08:00`);
 }
 
+function marketTypeFromString(value: string): MarketType {
+  const normalized = value.toUpperCase();
+  if (normalized === 'ML' || normalized === 'MONEYLINE') return MarketType.ML;
+  if (normalized === 'SPREAD') return MarketType.SPREAD;
+  if (normalized === 'TOTAL' || normalized === 'OU' || normalized === 'O/U') return MarketType.TOTAL;
+  throw new Error(`未知的盤口類型: ${value}`);
+}
+
+function selectionFromString(value: string): MarketSelection {
+  const normalized = value.toUpperCase();
+  switch (normalized) {
+    case 'HOME':
+    case 'H':
+      return MarketSelection.HOME;
+    case 'AWAY':
+    case 'A':
+      return MarketSelection.AWAY;
+    case 'OVER':
+    case 'O':
+      return MarketSelection.OVER;
+    case 'UNDER':
+    case 'U':
+      return MarketSelection.UNDER;
+    default:
+      throw new Error(`未知的投注選項: ${value}`);
+  }
+}
+
+function outcomeFromString(value: string): ResultOutcome {
+  const normalized = value.toUpperCase();
+  if (normalized === 'W' || normalized === 'WIN') return ResultOutcome.WIN;
+  if (normalized === 'L' || normalized === 'LOSE') return ResultOutcome.LOSE;
+  if (normalized === 'P' || normalized === 'PUSH') return ResultOutcome.PUSH;
+  throw new Error(`未知的賽果標記: ${value}`);
+}
+
 function parseResultSide(value?: string) {
   const result: Partial<Record<MarketSelection, ResultOutcome>> = {};
   if (!value) return result;
@@ -53,8 +80,8 @@ function parseResultSide(value?: string) {
   for (const token of tokens) {
     const [rawSelection, rawOutcome] = token.split(':').map((item) => item.trim());
     if (!rawSelection || !rawOutcome) continue;
-    const selection = parseMarketSelectionInput(rawSelection);
-    result[selection] = parseResultOutcomeInput(rawOutcome);
+    const selection = selectionFromString(rawSelection);
+    result[selection] = outcomeFromString(rawOutcome);
   }
   return result;
 }
@@ -183,14 +210,15 @@ export async function importDataset({
     const resultInfo = parseResultSide(row.result_side);
     for (const [selection, outcome] of Object.entries(resultInfo)) {
       const marketType =
-        selection === MARKET_SELECTION.OVER || selection === MARKET_SELECTION.UNDER
-          ? MARKET_TYPE.TOTAL
-          : MARKET_TYPE.ML;
+        (selection as MarketSelection) === MarketSelection.OVER ||
+        (selection as MarketSelection) === MarketSelection.UNDER
+          ? MarketType.TOTAL
+          : MarketType.ML;
       const marketId = await ensureMarket(
         gameId,
         marketType,
         selection as MarketSelection,
-        marketType === MARKET_TYPE.TOTAL ? closingTotal ?? null : undefined
+        marketType === MarketType.TOTAL ? closingTotal ?? null : undefined
       );
       await prisma.result.upsert({
         where: { marketId },
@@ -216,8 +244,8 @@ export async function importDataset({
       finalized: false
     };
     const gameId = await getGameId(base);
-    const type = parseMarketTypeInput(row.market);
-    const selection = parseMarketSelectionInput(row.selection);
+    const type = marketTypeFromString(row.market);
+    const selection = selectionFromString(row.selection);
     const lineKey = `${gameId}|${type}`;
     const line = closingTotals.get(lineKey) ?? null;
     const marketId = await ensureMarket(gameId, type, selection, line);
@@ -241,8 +269,8 @@ export async function importDataset({
       finalized: false
     };
     const gameId = await getGameId(base);
-    const type = parseMarketTypeInput(row.market);
-    const selection = parseMarketSelectionInput(row.selection);
+    const type = marketTypeFromString(row.market);
+    const selection = selectionFromString(row.selection);
     const lineKey = `${gameId}|${type}`;
     const line = closingTotals.get(lineKey) ?? null;
     const marketId = await ensureMarket(gameId, type, selection, line);

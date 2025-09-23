@@ -1,7 +1,7 @@
+import { MarketType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getReportData, ReportMode } from '@/lib/reporting';
-import { MarketType, parseMarketTypeInput } from '@/lib/enums';
 
 const querySchema = z.object({
   mode: z.enum(['highWin', 'positiveEv']).default('positiveEv'),
@@ -20,15 +20,13 @@ function parseMarketTypes(value?: string) {
     .split(',')
     .map((item) => item.trim().toUpperCase())
     .filter(Boolean);
+
   const types: MarketType[] = [];
   for (const item of normalized) {
-    try {
-      const parsed = parseMarketTypeInput(item);
-      if (!types.includes(parsed)) {
-        types.push(parsed);
-      }
-    } catch (error) {
-      console.warn('忽略未知盤口類型', item, error);
+    if (item in MarketType) {
+      types.push(MarketType[item as keyof typeof MarketType]);
+    } else {
+      console.warn('忽略未知盤口類型', item);
     }
   }
   return types.length ? types : undefined;
@@ -38,6 +36,7 @@ export async function GET(request: NextRequest) {
   try {
     const query = Object.fromEntries(request.nextUrl.searchParams.entries());
     const parsed = querySchema.parse(query);
+
     const leagues = parsed.leagues
       ? parsed.leagues.split(',').map((item) => item.trim()).filter(Boolean)
       : undefined;

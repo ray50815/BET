@@ -1,10 +1,20 @@
+import { PrismaClient } from '@prisma/client';
 import {
+  MARKET_SELECTION,
+  MARKET_TYPE,
+  PICK_SELECTION,
+  RESULT_OUTCOME,
   MarketSelection,
   MarketType,
   PickSelection,
-  PrismaClient,
   ResultOutcome
-} from '@prisma/client';
+} from '../lib/enums';
+
+if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.trim()) {
+  const fallback = 'file:./dev.db';
+  process.env.DATABASE_URL = fallback;
+  console.log(`DATABASE_URL 未設定，使用預設 SQLite (${fallback}) 執行種子資料。`);
+}
 
 const prisma = new PrismaClient();
 
@@ -100,30 +110,30 @@ async function main() {
       const homeMarket = await prisma.market.create({
         data: {
           gameId: game.id,
-          type: MarketType.ML,
-          selection: MarketSelection.HOME
+          type: MARKET_TYPE.ML,
+          selection: MARKET_SELECTION.HOME
         }
       });
       const awayMarket = await prisma.market.create({
         data: {
           gameId: game.id,
-          type: MarketType.ML,
-          selection: MarketSelection.AWAY
+          type: MARKET_TYPE.ML,
+          selection: MARKET_SELECTION.AWAY
         }
       });
       const overMarket = await prisma.market.create({
         data: {
           gameId: game.id,
-          type: MarketType.TOTAL,
-          selection: MarketSelection.OVER,
+          type: MARKET_TYPE.TOTAL,
+          selection: MARKET_SELECTION.OVER,
           line: totalLine
         }
       });
       const underMarket = await prisma.market.create({
         data: {
           gameId: game.id,
-          type: MarketType.TOTAL,
-          selection: MarketSelection.UNDER,
+          type: MARKET_TYPE.TOTAL,
+          selection: MARKET_SELECTION.UNDER,
           line: totalLine
         }
       });
@@ -170,28 +180,28 @@ async function main() {
       await prisma.result.create({
         data: {
           marketId: homeMarket.id,
-          outcome: homeWin ? ResultOutcome.WIN : ResultOutcome.LOSE,
+          outcome: homeWin ? RESULT_OUTCOME.WIN : RESULT_OUTCOME.LOSE,
           settledAt: new Date(gameDate.getTime() + 4 * 60 * 60 * 1000)
         }
       });
       await prisma.result.create({
         data: {
           marketId: awayMarket.id,
-          outcome: homeWin ? ResultOutcome.LOSE : ResultOutcome.WIN,
+          outcome: homeWin ? RESULT_OUTCOME.LOSE : RESULT_OUTCOME.WIN,
           settledAt: new Date(gameDate.getTime() + 4 * 60 * 60 * 1000)
         }
       });
       await prisma.result.create({
         data: {
           marketId: overMarket.id,
-          outcome: totalOver ? ResultOutcome.WIN : ResultOutcome.LOSE,
+          outcome: totalOver ? RESULT_OUTCOME.WIN : RESULT_OUTCOME.LOSE,
           settledAt: new Date(gameDate.getTime() + 4 * 60 * 60 * 1000)
         }
       });
       await prisma.result.create({
         data: {
           marketId: underMarket.id,
-          outcome: totalOver ? ResultOutcome.LOSE : ResultOutcome.WIN,
+          outcome: totalOver ? RESULT_OUTCOME.LOSE : RESULT_OUTCOME.WIN,
           settledAt: new Date(gameDate.getTime() + 4 * 60 * 60 * 1000)
         }
       });
@@ -199,13 +209,13 @@ async function main() {
       const picks = [
         {
           marketId: homeMarket.id,
-          selection: PickSelection.HOME,
+          selection: PICK_SELECTION.HOME,
           odds: homeOdds,
           pModel: homeModel
         },
         {
           marketId: overMarket.id,
-          selection: PickSelection.OVER,
+          selection: PICK_SELECTION.OVER,
           odds: overOdds,
           pModel: overModel
         }

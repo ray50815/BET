@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { MarketSelection, MarketType } from '@prisma/client';
+import type { MarketSelection, MarketType } from '@/lib/enums';
 import { ReportRow } from '@/lib/reporting';
 import clsx from 'clsx';
 

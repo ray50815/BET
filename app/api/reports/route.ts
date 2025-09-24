@@ -1,9 +1,9 @@
-import { MarketType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { z } from 'zod';
 import { getReportData, ReportMode } from '@/lib/reporting';
 import { DatabaseNotConfiguredError } from '@/lib/prisma';
+import { MarketType, parseMarketTypeInput } from '@/lib/enums';
 
 const querySchema = z.object({
   mode: z.enum(['highWin', 'positiveEv']).default('positiveEv'),
@@ -25,10 +25,13 @@ function parseMarketTypes(value?: string) {
 
   const types: MarketType[] = [];
   for (const item of normalized) {
-    if (item in MarketType) {
-      types.push(MarketType[item as keyof typeof MarketType]);
-    } else {
-      console.warn('忽略未知盤口類型', item);
+    try {
+      const parsed = parseMarketTypeInput(item);
+      if (!types.includes(parsed)) {
+        types.push(parsed);
+      }
+    } catch (error) {
+      console.warn('忽略未知盤口類型', item, error);
     }
   }
   return types.length ? types : undefined;

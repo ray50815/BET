@@ -1,36 +1,10 @@
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
-}
-
-enum MarketType {
-  ML
-  SPREAD
-  TOTAL
-}
-
-enum MarketSelection {
-  HOME
-  AWAY
-  OVER
-  UNDER
-}
-
-enum PickSelection {
-  HOME
-  AWAY
-  OVER
-  UNDER
-}
-
-enum ResultOutcome {
-  WIN
-  LOSE
-  PUSH
 }
 
 model Team {
@@ -54,12 +28,12 @@ model Game {
 }
 
 model Market {
-  id          Int              @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   gameId      Int
-  type        MarketType
-  selection   MarketSelection
+  type        String
+  selection   String
   line        Float?
-  game        Game             @relation(fields: [gameId], references: [id])
+  game        Game     @relation(fields: [gameId], references: [id])
   odds        Odds[]
   modelProbs  ModelProb[]
   picks       Pick[]
@@ -85,32 +59,32 @@ model ModelProb {
 }
 
 model Pick {
-  id          Int           @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   marketId    Int
-  selection   PickSelection
+  selection   String
   stakeUnits  Float
   kellyFactor Float
   createdAt   DateTime @default(now())
-  market      Market        @relation(fields: [marketId], references: [id])
+  market      Market   @relation(fields: [marketId], references: [id])
 }
 
 model Result {
-  id        Int            @id @default(autoincrement())
-  marketId  Int            @unique
-  outcome   ResultOutcome
+  id        Int      @id @default(autoincrement())
+  marketId  Int      @unique
+  outcome   String
   settledAt DateTime @default(now())
-  market    Market         @relation(fields: [marketId], references: [id])
+  market    Market   @relation(fields: [marketId], references: [id])
 }
 
 model MetricDaily {
-  id   Int    @id @default(autoincrement())
+  id   Int      @id @default(autoincrement())
   date DateTime @unique
-  kpi  Json
+  kpi  String
 }
 
 model UploadLog {
   id        Int      @id @default(autoincrement())
   filename  String
   createdAt DateTime @default(now())
-  meta      Json
+  meta      String
 }

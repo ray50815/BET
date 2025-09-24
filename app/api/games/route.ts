@@ -1,4 +1,3 @@
-import { MarketType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -28,10 +27,7 @@ export async function GET(request: NextRequest) {
       parseDate(parsed.startDate, 0) ??
       new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // 利用 parseMarketTypeInput 將字串轉換成 Prisma 的 enum
-    const marketFilter = parsed.marketType
-      ? parseMarketTypeInput(parsed.marketType) as MarketType
-      : undefined;
+    const marketFilter = parsed.marketType ? parseMarketTypeInput(parsed.marketType) : undefined;
 
     const prisma = getPrismaClient();
     const games = await prisma.game.findMany({

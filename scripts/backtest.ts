@@ -1,5 +1,11 @@
-import { MarketType } from '@prisma/client';
 import { subDays } from 'date-fns';
+import {
+  MARKET_TYPE,
+  RESULT_OUTCOME_VALUES,
+  MarketType,
+  ResultOutcome,
+  parseMarketTypeInput
+} from '@/lib/enums';
 import { DatabaseNotConfiguredError, getPrismaClient } from '@/lib/prisma';
 import {
   calculateEv,
@@ -22,11 +28,23 @@ async function main() {
     ? process.env.LEAGUES.split(',').map((item) => item.trim()).filter(Boolean)
     : undefined;
   const marketTypes = process.env.MARKETS
-    ? process.env.MARKETS.split(',')
-        .map((item) => item.trim().toUpperCase())
-        .filter((item): item is keyof typeof MarketType => item in MarketType)
-        .map((item) => MarketType[item])
-    : [MarketType.ML, MarketType.SPREAD, MarketType.TOTAL];
+    ? Array.from(
+        new Set(
+          process.env.MARKETS.split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => {
+              try {
+                return parseMarketTypeInput(item);
+              } catch (error) {
+                console.warn('忽略未知盤口類型', item, error);
+                return null;
+              }
+            })
+            .filter((value): value is MarketType => value !== null)
+        )
+      )
+    : [MARKET_TYPE.ML, MARKET_TYPE.SPREAD, MARKET_TYPE.TOTAL];
 
   const prisma = getPrismaClient();
   const markets = await prisma.market.findMany({
@@ -98,21 +116,21 @@ async function main() {
       .slice(0, maxConcurrent);
 
     for (const pick of eligible) {
-      const profit = calculateProfit(
-        pick.market.result?.outcome ?? 'PUSH',
-        Number(pick.odds.oddsDecimal),
-        stakeUnits
-      );
+      const rawOutcome = pick.market.result?.outcome ?? 'PUSH';
+      const outcome = RESULT_OUTCOME_VALUES.includes(rawOutcome as ResultOutcome)
+        ? (rawOutcome as ResultOutcome)
+        : 'PUSH';
+      const profit = calculateProfit(outcome, Number(pick.odds.oddsDecimal), stakeUnits);
       selected.push({
         date,
         league: pick.market.game.league,
         matchup: `${pick.market.game.awayTeam.name} @ ${pick.market.game.homeTeam.name}`,
-        marketType: pick.market.type,
+        marketType: parseMarketTypeInput(pick.market.type),
         selection: pick.market.selection,
         oddsDecimal: Number(pick.odds.oddsDecimal),
         pModel: pick.model.pModel,
         ev: pick.ev,
-        result: pick.market.result?.outcome ?? 'PUSH',
+        result: outcome,
         profit
       });
     }

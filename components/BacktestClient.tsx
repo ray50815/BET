@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MarketType } from '@prisma/client';
+import { MARKET_TYPE, MarketType } from '@/lib/enums';
 import { KpiCard } from '@/components/KpiCard';
 import { PerformanceChart } from '@/components/PerformanceChart';
 
@@ -36,7 +36,7 @@ interface BacktestClientProps {
   leagues: string[];
 }
 
-type MarketTypeValue = keyof typeof MarketType;
+type MarketTypeValue = keyof typeof MARKET_TYPE;
 
 const MARKET_OPTIONS: { label: string; value: MarketTypeValue }[] = [
   { label: '獨贏 (ML)', value: 'ML' },

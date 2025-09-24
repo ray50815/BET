@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { MarketType } from '@prisma/client';
+import { MARKET_TYPE, MarketType } from '@/lib/enums';
 import { KpiCard } from '@/components/KpiCard';
 import { ReportResult } from '@/lib/reporting';
 import { ReportTable } from '@/components/ReportTable';
@@ -11,7 +11,7 @@ interface ReportsClientProps {
   leagues: string[];
 }
 
-type MarketTypeValue = keyof typeof MarketType;
+type MarketTypeValue = keyof typeof MARKET_TYPE;
 type Mode = 'highWin' | 'positiveEv';
 
 const MARKET_OPTIONS: { label: string; value: MarketTypeValue }[] = [

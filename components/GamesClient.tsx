@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { MarketType } from '@prisma/client';
+import type { MarketType } from '@/lib/enums';
 
 interface GameMarket {
   id: number;

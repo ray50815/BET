@@ -1,5 +1,4 @@
 import { unstable_noStore as noStore } from 'next/cache';
-import { MarketType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { DatabaseNotConfiguredError, getPrismaClient } from '@/lib/prisma';
@@ -10,12 +9,13 @@ import {
   fillMissingDates,
   toDateKey
 } from '@/lib/analytics';
+import { MARKET_TYPE, MarketType, parseMarketTypeInput } from '@/lib/enums';
 
 const bodySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   leagues: z.array(z.string()).optional(),
-  marketTypes: z.array(z.nativeEnum(MarketType)).optional(),
+  marketTypes: z.array(z.enum(['ML', 'SPREAD', 'TOTAL'])).optional(),
   minProbability: z.number().optional().default(0.55),
   minEv: z.number().optional().default(0),
   stakeUnits: z.number().positive().optional().default(1),
@@ -37,9 +37,9 @@ export async function POST(request: NextRequest) {
       parseDateInput(body.startDate, 0) ??
       new Date(end.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    const marketTypes = body.marketTypes?.length
-      ? body.marketTypes
-      : [MarketType.ML, MarketType.SPREAD, MarketType.TOTAL];
+    const marketTypes: MarketType[] = body.marketTypes?.length
+      ? body.marketTypes.map((value) => parseMarketTypeInput(value))
+      : [MARKET_TYPE.ML, MARKET_TYPE.SPREAD, MARKET_TYPE.TOTAL];
 
     const prisma = getPrismaClient();
     const markets = await prisma.market.findMany({
@@ -120,7 +120,11 @@ export async function POST(request: NextRequest) {
         .slice(0, body.maxConcurrent);
 
       for (const pick of eligible) {
-        const result = pick.market.result?.outcome ?? 'PUSH';
+        const rawOutcome = pick.market.result?.outcome ?? 'PUSH';
+        const result =
+          rawOutcome === 'WIN' || rawOutcome === 'LOSE' || rawOutcome === 'PUSH'
+            ? rawOutcome
+            : 'PUSH';
         const profit = calculateProfit(
           result,
           pick.odds.oddsDecimal,
@@ -131,7 +135,7 @@ export async function POST(request: NextRequest) {
           date: dateKey,
           league: pick.market.game.league,
           matchup: `${pick.market.game.awayTeam.name} @ ${pick.market.game.homeTeam.name}`,
-          marketType: pick.market.type,
+          marketType: parseMarketTypeInput(pick.market.type),
           selection: pick.market.selection,
           oddsDecimal: Number(pick.odds.oddsDecimal.toFixed(2)),
           pModel: Number(pick.model.pModel.toFixed(3)),

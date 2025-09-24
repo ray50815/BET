@@ -3,6 +3,7 @@ import { subDays } from 'date-fns';
 import { GamesClient } from '@/components/GamesClient';
 import { DatabaseSetupNotice } from '@/components/DatabaseSetupNotice';
 import { toDateKey } from '@/lib/analytics';
+import { parseMarketTypeInput } from '@/lib/enums';
 import { getLeagues } from '@/lib/reporting';
 import { DatabaseNotConfiguredError, getPrismaClient } from '@/lib/prisma';
 
@@ -52,7 +53,7 @@ export default async function GamesPage() {
       finalized: game.finalized,
       markets: game.markets.map((market) => ({
         id: market.id,
-        type: market.type,
+        type: parseMarketTypeInput(market.type),
         selection: market.selection,
         line: market.line,
         odds: market.odds[0]?.oddsDecimal ?? null,

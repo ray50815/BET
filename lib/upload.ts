@@ -1,4 +1,12 @@
-import { MarketSelection, MarketType, PrismaClient, ResultOutcome } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import {
+  MARKET_SELECTION,
+  MARKET_TYPE,
+  RESULT_OUTCOME,
+  MarketSelection,
+  MarketType,
+  ResultOutcome
+} from './enums';
 import { DatabaseNotConfiguredError, getPrismaClient, isDatabaseConfigured } from './prisma';
 
 export interface GameRow {
@@ -39,9 +47,9 @@ function parseDate(value: string) {
 
 function marketTypeFromString(value: string): MarketType {
   const normalized = value.toUpperCase();
-  if (normalized === 'ML' || normalized === 'MONEYLINE') return MarketType.ML;
-  if (normalized === 'SPREAD') return MarketType.SPREAD;
-  if (normalized === 'TOTAL' || normalized === 'OU' || normalized === 'O/U') return MarketType.TOTAL;
+  if (normalized === 'ML' || normalized === 'MONEYLINE') return MARKET_TYPE.ML;
+  if (normalized === 'SPREAD') return MARKET_TYPE.SPREAD;
+  if (normalized === 'TOTAL' || normalized === 'OU' || normalized === 'O/U') return MARKET_TYPE.TOTAL;
   throw new Error(`未知的盤口類型: ${value}`);
 }
 
@@ -50,16 +58,16 @@ function selectionFromString(value: string): MarketSelection {
   switch (normalized) {
     case 'HOME':
     case 'H':
-      return MarketSelection.HOME;
+      return MARKET_SELECTION.HOME;
     case 'AWAY':
     case 'A':
-      return MarketSelection.AWAY;
+      return MARKET_SELECTION.AWAY;
     case 'OVER':
     case 'O':
-      return MarketSelection.OVER;
+      return MARKET_SELECTION.OVER;
     case 'UNDER':
     case 'U':
-      return MarketSelection.UNDER;
+      return MARKET_SELECTION.UNDER;
     default:
       throw new Error(`未知的投注選項: ${value}`);
   }
@@ -67,9 +75,9 @@ function selectionFromString(value: string): MarketSelection {
 
 function outcomeFromString(value: string): ResultOutcome {
   const normalized = value.toUpperCase();
-  if (normalized === 'W' || normalized === 'WIN') return ResultOutcome.WIN;
-  if (normalized === 'L' || normalized === 'LOSE') return ResultOutcome.LOSE;
-  if (normalized === 'P' || normalized === 'PUSH') return ResultOutcome.PUSH;
+  if (normalized === 'W' || normalized === 'WIN') return RESULT_OUTCOME.WIN;
+  if (normalized === 'L' || normalized === 'LOSE') return RESULT_OUTCOME.LOSE;
+  if (normalized === 'P' || normalized === 'PUSH') return RESULT_OUTCOME.PUSH;
   throw new Error(`未知的賽果標記: ${value}`);
 }
 
@@ -219,16 +227,16 @@ export async function importDataset({
     const resultInfo = parseResultSide(row.result_side);
     for (const [selection, outcome] of Object.entries(resultInfo)) {
       const marketType =
-        (selection as MarketSelection) === MarketSelection.OVER ||
-        (selection as MarketSelection) === MarketSelection.UNDER
-          ? MarketType.TOTAL
-          : MarketType.ML;
+        (selection as MarketSelection) === MARKET_SELECTION.OVER ||
+        (selection as MarketSelection) === MARKET_SELECTION.UNDER
+          ? MARKET_TYPE.TOTAL
+          : MARKET_TYPE.ML;
       const marketId = await ensureMarket(
         prisma,
         gameId,
         marketType,
         selection as MarketSelection,
-        marketType === MarketType.TOTAL ? closingTotal ?? null : undefined
+        marketType === MARKET_TYPE.TOTAL ? closingTotal ?? null : undefined
       );
       await prisma.result.upsert({
         where: { marketId },
@@ -298,11 +306,11 @@ export async function importDataset({
   await prisma.uploadLog.create({
     data: {
       filename: `manual-upload-${new Date().toISOString()}`,
-      meta: {
+      meta: JSON.stringify({
         gamesInserted,
         oddsInserted,
         modelsInserted
-      }
+      })
     }
   });
 

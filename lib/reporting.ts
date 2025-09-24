@@ -1,5 +1,13 @@
-import { MarketSelection, MarketType } from '@prisma/client';
 import { subDays } from 'date-fns';
+import {
+  MARKET_SELECTION_VALUES,
+  MARKET_TYPE,
+  MARKET_TYPE_VALUES,
+  RESULT_OUTCOME_VALUES,
+  ResultOutcome,
+  MarketSelection,
+  MarketType
+} from './enums';
 import { DatabaseNotConfiguredError, getPrismaClient, isDatabaseConfigured } from './prisma';
 import {
   calculateEv,
@@ -90,6 +98,28 @@ function formatMatchup(home: string, away: string) {
   return `${away} @ ${home}`;
 }
 
+function normalizeMarketType(value: string): MarketType {
+  if (MARKET_TYPE_VALUES.includes(value as MarketType)) {
+    return value as MarketType;
+  }
+  throw new Error(`資料庫中的 market.type 無法辨識: ${value}`);
+}
+
+function normalizeMarketSelection(value: string): MarketSelection {
+  if (MARKET_SELECTION_VALUES.includes(value as MarketSelection)) {
+    return value as MarketSelection;
+  }
+  throw new Error(`資料庫中的 market.selection 無法辨識: ${value}`);
+}
+
+function normalizeOutcome(value: string | null | undefined): ReportRow['result'] {
+  if (!value) return 'PENDING';
+  if (RESULT_OUTCOME_VALUES.includes(value as ResultOutcome)) {
+    return value as ResultOutcome;
+  }
+  return 'PENDING';
+}
+
 export async function getLeagues(): Promise<string[]> {
   const prisma = ensureDatabase();
   const leagues = await prisma.game.findMany({
@@ -108,7 +138,7 @@ export async function getReportData(
   const { start, end } = resolveDateRange(filters);
   const marketTypes = filters.marketTypes?.length
     ? filters.marketTypes
-    : [MarketType.ML, MarketType.SPREAD, MarketType.TOTAL];
+    : [MARKET_TYPE.ML, MARKET_TYPE.SPREAD, MARKET_TYPE.TOTAL];
 
   const markets = await prisma.market.findMany({
     where: {
@@ -191,19 +221,19 @@ export async function getReportData(
     const kellyFraction = calculateKellyFraction(pModel, Number(latestOdds.oddsDecimal));
     const kellyTiers = getKellyStakeTiers(BANKROLL_UNITS, kellyFraction);
 
-    const outcome = market.result?.outcome ?? null;
-    const result: ReportRow['result'] = outcome ? outcome : 'PENDING';
-    const unitsDelta = outcome
-      ? calculateProfit(outcome, Number(latestOdds.oddsDecimal), BANKROLL_UNITS)
-      : 0;
+    const result = normalizeOutcome(market.result?.outcome);
+    const unitsDelta =
+      result === 'PENDING'
+        ? 0
+        : calculateProfit(result, Number(latestOdds.oddsDecimal), BANKROLL_UNITS);
 
     rows.push({
       id: market.id,
       date: dateKey,
       league: market.game.league,
       matchup: formatMatchup(market.game.homeTeam.name, market.game.awayTeam.name),
-      marketType: market.type,
-      selection: market.selection,
+      marketType: normalizeMarketType(market.type),
+      selection: normalizeMarketSelection(market.selection),
       oddsDecimal: Number(Number(latestOdds.oddsDecimal).toFixed(2)),
       bookmaker: latestOdds.bookmaker,
       pModel: Number(pModel.toFixed(3)),
@@ -254,7 +284,7 @@ export async function getDashboardOverview() {
   const picks = report.rows.map((row) => ({
     stakeUnits: 1,
     oddsDecimal: row.oddsDecimal,
-    outcome: row.result as 'WIN' | 'LOSE' | 'PUSH',
+    outcome: (row.result === 'PENDING' ? 'PUSH' : row.result) as 'WIN' | 'LOSE' | 'PUSH',
     date: new Date(`${row.date}T12:00:00+08:00`)
   }));
 

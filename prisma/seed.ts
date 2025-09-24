@@ -11,9 +11,8 @@ import {
 } from '../lib/enums';
 
 if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.trim()) {
-  const fallback = 'file:./dev.db';
-  process.env.DATABASE_URL = fallback;
-  console.log(`DATABASE_URL 未設定，使用預設 SQLite (${fallback}) 執行種子資料。`);
+  console.error('缺少 DATABASE_URL，無法執行 PostgreSQL 種子資料。請先設定環境變數後再重試。');
+  process.exit(1);
 }
 
 const prisma = new PrismaClient();

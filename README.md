@@ -7,7 +7,7 @@
 - **Next.js 14 (App Router)** + **React 18**
 - **Tailwind CSS** UI 樣式
 - **Recharts** 成效走勢圖
-- **Prisma ORM + SQLite**（預設）或 **PostgreSQL**（正式環境建議使用託管資料庫）
+- **Prisma ORM + PostgreSQL**（正式環境預設，建議搭配託管資料庫）
 - **Zod** API 入參驗證
 - **Vitest** 單元測試 / **Playwright** 端對端測試
 
@@ -17,7 +17,8 @@
 
    ```bash
    cp .env.example .env
-   # 預設使用 SQLite 檔案 prisma/dev.db，可視需求改為其他資料庫連線字串
+   # 範例採用本機 PostgreSQL，若尚未啟動資料庫可使用 Docker 快速建立：
+   # docker run --name bet-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:16
    ```
 
 2. 安裝套件並套用資料庫遷移：
@@ -46,7 +47,7 @@
 
 Prisma schema 定義於 [`prisma/schema.prisma`](./prisma/schema.prisma)，核心資料表：
 
-- `Team`、`Game`、`Market`（盤口與投注選項採字串欄位，對應值定義於 [`lib/enums.ts`](./lib/enums.ts)）
+- `Team`、`Game`、`Market`（盤口與投注選項採 Prisma Enum，對應值定義於 [`lib/enums.ts`](./lib/enums.ts)）
 - `Odds`、`ModelProb`、`Pick`、`Result`、`MetricDaily`
 - `UploadLog` 紀錄上傳批次資訊
 
@@ -117,11 +118,9 @@ Playwright 會啟動開發伺服器並驗證主要頁面元素、篩選器與匯
 
 ## 部屬建議（Render）
 
-- 若僅需示範環境，可沿用預設的 SQLite 連線字串（`file:./dev.db`）。若部署在 Render，需搭配 [Persistent Disk](https://render.com/docs/persistent-disks) 或改用託管資料庫（建議 PostgreSQL），以免部署後資料遺失。
-- 在 Render 的 **環境變數** 中設定 `DATABASE_URL` 指向正式資料庫；若未設定，服務仍會啟動並顯示「請設定 DATABASE_URL」提示，避免因遷移失敗導致部署中止。
-- 建議在 Render 的 **Start Command** 填入 `yarn start`（此指令會視環境變數決定是否執行 `prisma migrate deploy`，再啟動 `.next/standalone/server.js`）。
-- 若有自訂部署流程，請在建置或啟動階段加入 `npx prisma migrate deploy`，確保最新的遷移已套用。
-- `yarn build` 會先執行 Prisma Client 產生作業；若未提供 `DATABASE_URL`，建置腳本會自動使用 SQLite 連線字串以確保部署成功。
+- 在 Render 的 **環境變數** 中設定 `DATABASE_URL` 指向正式的 PostgreSQL 服務（建議搭配 Render PostgreSQL 或其他雲端資料庫）。若未設定，應用程式仍可啟動，但所有需要資料庫的頁面會顯示「請設定 DATABASE_URL」提示。
+- 建議在 Render 的 **Start Command** 填入 `yarn start`。此指令會在偵測到 `DATABASE_URL` 時執行 `prisma migrate deploy`，確保 schema 與遷移同步後再啟動 `.next/standalone/server.js`。
+- 若採用自訂部署流程，請在建置或啟動階段加入 `npx prisma migrate deploy` 並提前設定 `DATABASE_URL`。若建置階段未提供該環境變數，`yarn build` 仍會以範例的 PostgreSQL 連線字串產生 Prisma Client，避免部署中止，但請務必在正式環境提供正確的連線資訊。
 
 ## 常見問題
 

@@ -306,11 +306,11 @@ export async function importDataset({
   await prisma.uploadLog.create({
     data: {
       filename: `manual-upload-${new Date().toISOString()}`,
-      meta: JSON.stringify({
+      meta: {
         gamesInserted,
         oddsInserted,
         modelsInserted
-      })
+      }
     }
   });
 

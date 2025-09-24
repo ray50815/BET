@@ -1,6 +1,6 @@
 import { MarketSelection, MarketType } from '@prisma/client';
 import { subDays } from 'date-fns';
-import { prisma } from './prisma';
+import { DatabaseNotConfiguredError, getPrismaClient, isDatabaseConfigured } from './prisma';
 import {
   calculateEv,
   calculateImpliedProbability,
@@ -67,6 +67,13 @@ export interface ReportResult {
 const DEFAULT_RANGE_DAYS = 30;
 const BANKROLL_UNITS = 1;
 
+function ensureDatabase() {
+  if (!isDatabaseConfigured) {
+    throw new DatabaseNotConfiguredError();
+  }
+  return getPrismaClient();
+}
+
 function parseDateInput(date: string, hour = 0) {
   return new Date(`${date}T${hour.toString().padStart(2, '0')}:00:00+08:00`);
 }
@@ -84,6 +91,7 @@ function formatMatchup(home: string, away: string) {
 }
 
 export async function getLeagues(): Promise<string[]> {
+  const prisma = ensureDatabase();
   const leagues = await prisma.game.findMany({
     select: { league: true },
     distinct: ['league'],
@@ -96,6 +104,7 @@ export async function getReportData(
   mode: ReportMode,
   filters: ReportFilters = {}
 ): Promise<ReportResult> {
+  const prisma = ensureDatabase();
   const { start, end } = resolveDateRange(filters);
   const marketTypes = filters.marketTypes?.length
     ? filters.marketTypes

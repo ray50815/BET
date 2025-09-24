@@ -1,7 +1,9 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseCsv } from '@/lib/csv';
 import { GameRow, importDataset, ModelRow, OddsRow } from '@/lib/upload';
+import { DatabaseNotConfiguredError } from '@/lib/prisma';
 
 const gameSchema = z.object({
   date: z.string().min(1),
@@ -41,6 +43,7 @@ function toBoolean(value: string) {
 }
 
 export async function POST(request: NextRequest) {
+  noStore();
   try {
     const formData = await request.formData();
     const gamesFile = formData.get('games');
@@ -92,6 +95,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('資料匯入錯誤', error);
+    if (error instanceof DatabaseNotConfiguredError) {
+      return NextResponse.json(
+        { message: '資料庫尚未設定，請先設定 DATABASE_URL 環境變數' },
+        { status: 503 }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }

@@ -99,7 +99,7 @@ const gameCache = new Map<string, number>();
 const marketCache = new Map<string, number>();
 
 function ensureDatabase(): PrismaClient {
-  if (!isDatabaseConfigured) {
+  if (!isDatabaseConfigured()) {
     throw new DatabaseNotConfiguredError();
   }
   return getPrismaClient();

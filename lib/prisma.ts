@@ -9,28 +9,39 @@ class DatabaseNotConfiguredError extends Error {
   }
 }
 
-const databaseUrl = process.env.DATABASE_URL;
-
-export const isDatabaseConfigured = typeof databaseUrl === 'string' && databaseUrl.trim().length > 0;
+function hasDatabaseUrl() {
+  const url = process.env.DATABASE_URL;
+  return typeof url === 'string' && url.trim().length > 0;
+}
 
 let prismaClient: PrismaClient | undefined;
 
-if (isDatabaseConfigured) {
-  prismaClient =
+function createPrismaClient() {
+  return (
     globalForPrisma.prisma ??
     new PrismaClient({
       log: ['info', 'warn', 'error']
-    });
+    })
+  );
+}
 
-  if (process.env.NODE_ENV !== 'production') {
-    globalForPrisma.prisma = prismaClient;
-  }
+export function isDatabaseConfigured() {
+  return hasDatabaseUrl();
 }
 
 export function getPrismaClient() {
-  if (!prismaClient) {
+  if (!hasDatabaseUrl()) {
     throw new DatabaseNotConfiguredError();
   }
+
+  if (!prismaClient) {
+    prismaClient = createPrismaClient();
+
+    if (process.env.NODE_ENV !== 'production') {
+      globalForPrisma.prisma = prismaClient;
+    }
+  }
+
   return prismaClient;
 }
 

@@ -76,7 +76,7 @@ const DEFAULT_RANGE_DAYS = 30;
 const BANKROLL_UNITS = 1;
 
 function ensureDatabase() {
-  if (!isDatabaseConfigured) {
+  if (!isDatabaseConfigured()) {
     throw new DatabaseNotConfiguredError();
   }
   return getPrismaClient();

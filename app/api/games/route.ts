@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma';
 import { toDateKey } from '@/lib/analytics';
 import { parseMarketTypeInput } from '@/lib/enums';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const querySchema = z.object({
   league: z.string().optional(),
   startDate: z.string().optional(),

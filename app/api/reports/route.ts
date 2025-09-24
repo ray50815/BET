@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getReportData, ReportMode } from '@/lib/reporting';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const querySchema = z.object({
   mode: z.enum(['highWin', 'positiveEv']).default('positiveEv'),
   leagues: z.string().optional(),

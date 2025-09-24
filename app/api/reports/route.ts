@@ -2,6 +2,10 @@ import { MarketType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getReportData, ReportMode } from '@/lib/reporting';
+import { DatabaseNotConfiguredError } from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -61,6 +65,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('報告 API 錯誤', error);
+    if (error instanceof DatabaseNotConfiguredError) {
+      return NextResponse.json(
+        { message: '資料庫尚未設定，請先設定 DATABASE_URL 環境變數' },
+        { status: 503 }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }

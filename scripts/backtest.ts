@@ -1,6 +1,6 @@
 import { MarketType } from '@prisma/client';
 import { subDays } from 'date-fns';
-import { prisma } from '@/lib/prisma';
+import { DatabaseNotConfiguredError, getPrismaClient } from '@/lib/prisma';
 import {
   calculateEv,
   calculatePerformanceMetrics,
@@ -28,6 +28,7 @@ async function main() {
         .map((item) => MarketType[item])
     : [MarketType.ML, MarketType.SPREAD, MarketType.TOTAL];
 
+  const prisma = getPrismaClient();
   const markets = await prisma.market.findMany({
     where: {
       type: { in: marketTypes },
@@ -143,6 +144,10 @@ function formatPercent(value: number) {
 }
 
 main().catch((error) => {
+  if (error instanceof DatabaseNotConfiguredError) {
+    console.error('缺少 DATABASE_URL，請先設定資料庫連線後再執行 CLI 回測。');
+    process.exit(1);
+  }
   console.error(error);
   process.exit(1);
 });

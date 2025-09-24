@@ -128,6 +128,7 @@ Playwright 會啟動開發伺服器並驗證主要頁面元素、篩選器與匯
 
 - 於 Render 儀表板設定 `DATABASE_URL` 環境變數，指向託管 PostgreSQL（建議同時建立備援的 Shadow DB 供 Prisma 使用）。
 - 建議在部署流程或啟動指令中加入 `npx prisma migrate deploy`，確保最新的遷移已套用。
+
 - 此版本的 `yarn build` 會先執行 `prisma generate`，已可支援 PostgreSQL 的 enum 與 JSONB 欄位，不會再出現先前的 SQLite 相容性錯誤。
 
 ## 常見問題
@@ -145,7 +146,9 @@ npm run build
 npm run start
 ```
 
+
 `npm run start` 會自動執行 `prisma migrate deploy`，確保資料庫 schema 與程式碼同步後，再透過 `.next/standalone/server.js` 啟動。
+
 
 
 ## 法規與免責聲明

@@ -7,18 +7,40 @@
 - **Next.js 14 (App Router)** + **React 18**
 - **Tailwind CSS** UI 樣式
 - **Recharts** 成效走勢圖
-- **Prisma ORM + SQLite** 持久化資料庫
+- **Prisma ORM + PostgreSQL** 持久化資料庫（Render 及正式環境建議使用託管資料庫）
 - **Zod** API 入參驗證
 - **Vitest** 單元測試 / **Playwright** 端對端測試
 
 ## 快速開始
 
-```bash
-npm install
-npx prisma migrate dev
-npm run seed
-npm run dev
-```
+1. 建立 `.env` 並設定 `DATABASE_URL`：
+
+   ```bash
+   cp .env.example .env
+   # 預設使用本機 PostgreSQL，必要時請依環境調整連線字串
+   ```
+
+   若本機尚未安裝 PostgreSQL，可使用 Docker 快速啟動：
+
+   ```bash
+   docker run --name bet-postgres -e POSTGRES_DB=bet -e POSTGRES_USER=postgres \
+     -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:16
+   ```
+
+2. 安裝套件並套用資料庫遷移：
+
+   ```bash
+   npm install
+   npx prisma migrate deploy
+   # 或在開發環境執行 `npx prisma migrate dev`
+   npm run seed
+   ```
+
+3. 啟動開發伺服器：
+
+   ```bash
+   npm run dev
+   ```
 
 啟動後瀏覽 <http://localhost:3000>：
 
@@ -101,6 +123,13 @@ npm run test:e2e
 
 Playwright 會啟動開發伺服器並驗證主要頁面元素、篩選器與匯出功能。
 
+## 部屬建議（Render）
+
+- 於 Render 儀表板設定 `DATABASE_URL` 環境變數，指向託管 PostgreSQL（建議同時建立備援的 Shadow DB 供 Prisma 使用）。若未設定，服務仍會啟動，但頁面/API 會顯示「請設定 DATABASE_URL」的提示以避免部署失敗。
+- 建議在 Render 的 **Start Command** 填入 `yarn start`（此指令會視環境變數決定是否執行 `prisma migrate deploy`，再啟動 `.next/standalone/server.js`）。
+- 若有自訂部署流程，請在建置或啟動階段加入 `npx prisma migrate deploy`，確保最新的遷移已套用。
+- 此版本的 `yarn build` 會先執行 `prisma generate`，已可支援 PostgreSQL 的 enum 與 JSONB 欄位，不會再出現先前的 SQLite 相容性錯誤。
+
 ## 常見問題
 
 1. **上傳失敗 / 欄位格式錯誤**：請確認欄位名稱、大小寫與 README 範例一致；`result_side` 需使用 `HOME:W;AWAY:L;OVER:W;UNDER:L` 格式。
@@ -109,12 +138,14 @@ Playwright 會啟動開發伺服器並驗證主要頁面元素、篩選器與匯
 
 ## 打包
 
-Next.js 已設定 `output: 'standalone'`，可使用官方指令建置：
+Next.js 已設定 `output: 'standalone'`，建置與正式啟動流程如下：
 
 ```bash
 npm run build
 npm run start
 ```
+
+`npm run start` 會在偵測到 `DATABASE_URL` 時自動執行 `prisma migrate deploy`，確保資料庫 schema 與程式碼同步後，再透過 `.next/standalone/server.js` 啟動；若環境變數缺少則略過遷移並顯示警示訊息。
 
 
 ## 法規與免責聲明

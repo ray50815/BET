@@ -1,7 +1,7 @@
 import { MarketType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+import { DatabaseNotConfiguredError, getPrismaClient } from '@/lib/prisma';
 import {
   calculateEv,
   calculatePerformanceMetrics,
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       ? body.marketTypes
       : [MarketType.ML, MarketType.SPREAD, MarketType.TOTAL];
 
+    const prisma = getPrismaClient();
     const markets = await prisma.market.findMany({
       where: {
         type: { in: marketTypes },
@@ -172,6 +173,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('回測 API 錯誤', error);
+    if (error instanceof DatabaseNotConfiguredError) {
+      return NextResponse.json(
+        { message: '資料庫尚未設定，請先設定 DATABASE_URL 環境變數' },
+        { status: 503 }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }

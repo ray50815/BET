@@ -1,9 +1,12 @@
 import { MarketType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+import { DatabaseNotConfiguredError, getPrismaClient } from '@/lib/prisma';
 import { toDateKey } from '@/lib/analytics';
 import { parseMarketTypeInput } from '@/lib/enums';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const querySchema = z.object({
   league: z.string().optional(),
@@ -31,6 +34,7 @@ export async function GET(request: NextRequest) {
       ? parseMarketTypeInput(parsed.marketType) as MarketType
       : undefined;
 
+    const prisma = getPrismaClient();
     const games = await prisma.game.findMany({
       where: {
         league: parsed.league ? parsed.league : undefined,
@@ -85,6 +89,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ games: payload });
   } catch (error) {
     console.error('取得賽程 API 錯誤', error);
+    if (error instanceof DatabaseNotConfiguredError) {
+      return NextResponse.json(
+        { message: '資料庫尚未設定，請先設定 DATABASE_URL 環境變數' },
+        { status: 503 }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }

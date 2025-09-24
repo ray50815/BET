@@ -1,5 +1,5 @@
-import { MarketSelection, MarketType, ResultOutcome } from '@prisma/client';
-import { prisma } from './prisma';
+import { MarketSelection, MarketType, PrismaClient, ResultOutcome } from '@prisma/client';
+import { DatabaseNotConfiguredError, getPrismaClient, isDatabaseConfigured } from './prisma';
 
 export interface GameRow {
   date: string;
@@ -90,7 +90,14 @@ const teamCache = new Map<string, number>();
 const gameCache = new Map<string, number>();
 const marketCache = new Map<string, number>();
 
-async function getTeamId(league: string, name: string) {
+function ensureDatabase(): PrismaClient {
+  if (!isDatabaseConfigured) {
+    throw new DatabaseNotConfiguredError();
+  }
+  return getPrismaClient();
+}
+
+async function getTeamId(prisma: PrismaClient, league: string, name: string) {
   const key = `${league}|${name}`;
   if (teamCache.has(key)) return teamCache.get(key)!;
   const existing = await prisma.team.findFirst({
@@ -111,12 +118,12 @@ function gameKey(league: string, date: string, home: string, away: string) {
   return `${league}|${date}|${home}|${away}`;
 }
 
-async function getGameId(row: GameRow) {
+async function getGameId(prisma: PrismaClient, row: GameRow) {
   const key = gameKey(row.league, row.date, row.home, row.away);
   if (gameCache.has(key)) return gameCache.get(key)!;
   const date = parseDate(row.date);
-  const homeTeamId = await getTeamId(row.league, row.home);
-  const awayTeamId = await getTeamId(row.league, row.away);
+  const homeTeamId = await getTeamId(prisma, row.league, row.home);
+  const awayTeamId = await getTeamId(prisma, row.league, row.away);
   const existing = await prisma.game.findFirst({
     where: {
       league: row.league,
@@ -143,6 +150,7 @@ async function getGameId(row: GameRow) {
 }
 
 async function ensureMarket(
+  prisma: PrismaClient,
   gameId: number,
   type: MarketType,
   selection: MarketSelection,
@@ -188,6 +196,7 @@ export async function importDataset({
   odds: OddsRow[];
   models: ModelRow[];
 }) {
+  const prisma = ensureDatabase();
   teamCache.clear();
   gameCache.clear();
   marketCache.clear();
@@ -197,7 +206,7 @@ export async function importDataset({
   const closingTotals = new Map<string, number>();
 
   for (const row of games) {
-    const gameId = await getGameId(row);
+    const gameId = await getGameId(prisma, row);
     gamesInserted += 1;
     await prisma.game.update({
       where: { id: gameId },
@@ -215,6 +224,7 @@ export async function importDataset({
           ? MarketType.TOTAL
           : MarketType.ML;
       const marketId = await ensureMarket(
+        prisma,
         gameId,
         marketType,
         selection as MarketSelection,
@@ -243,12 +253,12 @@ export async function importDataset({
       away: row.away,
       finalized: false
     };
-    const gameId = await getGameId(base);
+    const gameId = await getGameId(prisma, base);
     const type = marketTypeFromString(row.market);
     const selection = selectionFromString(row.selection);
     const lineKey = `${gameId}|${type}`;
     const line = closingTotals.get(lineKey) ?? null;
-    const marketId = await ensureMarket(gameId, type, selection, line);
+    const marketId = await ensureMarket(prisma, gameId, type, selection, line);
     await prisma.odds.create({
       data: {
         marketId,
@@ -268,12 +278,12 @@ export async function importDataset({
       away: row.away,
       finalized: false
     };
-    const gameId = await getGameId(base);
+    const gameId = await getGameId(prisma, base);
     const type = marketTypeFromString(row.market);
     const selection = selectionFromString(row.selection);
     const lineKey = `${gameId}|${type}`;
     const line = closingTotals.get(lineKey) ?? null;
-    const marketId = await ensureMarket(gameId, type, selection, line);
+    const marketId = await ensureMarket(prisma, gameId, type, selection, line);
     await prisma.modelProb.create({
       data: {
         marketId,

@@ -7,6 +7,9 @@ import { DatabaseNotConfiguredError } from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const querySchema = z.object({
   mode: z.enum(['highWin', 'positiveEv']).default('positiveEv'),
   leagues: z.string().optional(),

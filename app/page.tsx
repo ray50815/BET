@@ -8,6 +8,9 @@ import { DatabaseNotConfiguredError } from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }

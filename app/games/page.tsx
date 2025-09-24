@@ -8,6 +8,9 @@ import { DatabaseNotConfiguredError, getPrismaClient } from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function GamesPage() {
   try {
     const prisma = getPrismaClient();

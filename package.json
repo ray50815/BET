@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "node scripts/render-start.js",
+
+    "start": "prisma migrate deploy && node .next/standalone/server.js",
     "lint": "next lint",
     "seed": "ts-node prisma/seed.ts",
     "import:sample": "ts-node scripts/importCsv.ts",

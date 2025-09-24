@@ -3,6 +3,9 @@ import { PerformanceChart } from '@/components/PerformanceChart';
 import { ReportTable } from '@/components/ReportTable';
 import { getDashboardOverview } from '@/lib/reporting';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }

@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { toDateKey } from '@/lib/analytics';
 import { getLeagues } from '@/lib/reporting';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function GamesPage() {
   const end = new Date();
   const start = subDays(end, 14);
